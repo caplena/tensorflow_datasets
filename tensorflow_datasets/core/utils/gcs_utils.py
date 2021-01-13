@@ -36,22 +36,25 @@ GCS_DATASETS_DIR = 'datasets'
 _is_gcs_disabled = False
 
 
+# Exception raised when GCS isn't available
+# * UnimplementedError: On windows, gs:// isn't supported on old TF versions.
+#   https://github.com/tensorflow/tensorflow/issues/38477
+# * FailedPreconditionError: (e.g. no internet)
+# * PermissionDeniedError: Some environments block GCS access.
+# * AbortedError: All 10 retry attempts failed.
+GCS_UNAVAILABLE_EXCEPTIONS = (
+    tf.errors.UnimplementedError,
+    tf.errors.FailedPreconditionError,
+    tf.errors.PermissionDeniedError,
+    tf.errors.AbortedError,
+)
+
+
 def exists(path: type_utils.ReadWritePath) -> bool:
   """Checks if path exists. Returns False if issues occur connecting to GCS."""
   try:
     return path.exists()
-  # * UnimplementedError: On windows, gs:// isn't supported.
-  # * FailedPreconditionError: Raised by TF
-  # * PermissionDeniedError: Some environments block GCS access.
-  # * AbortedError: All 10 retry attempts failed.
-  except (
-      tf.errors.UnimplementedError,
-      tf.errors.FailedPreconditionError,
-      tf.errors.PermissionDeniedError,
-      tf.errors.AbortedError,
-  ):
-    # TODO(tfds): Investigate why windows, gs:// isn't supported.
-    # https://github.com/tensorflow/tensorflow/issues/38477
+  except GCS_UNAVAILABLE_EXCEPTIONS:
     return False
 
 
