@@ -144,6 +144,14 @@ MC4_LANGUAGES = [
     "zh-Latn", "zu"
 ]
 
+# Caplena C4 Languages
+CC4_LANGUAGES = [
+    "af", "sq", "eu", "bs", "ca", "co", "hr", "cs", "da", "nl", "en", "et",
+    "fo", "fi", "fr", "de", "el", "he", "hu", "ga", "is", "it", "lb", "li",
+    "lt", "lv", "mk", "nb", "nn", "no", "pl", "pt", "rm", "ro", "sr", "sk",
+    "sl", "es", "sv", "tr", "yi"
+]
+
 
 class C4Config(tfds.core.BuilderConfig):
   """BuilderConfig for C4 dataset."""
@@ -252,6 +260,14 @@ class C4(tfds.core.BeamBasedBuilder):
           description=
           "Filters from the default config to only include content from the "
           "URLs in OpenWebText (https://github.com/jcpeterson/openwebtext)."
+      ),
+      C4Config(
+          "caplena",
+          languages=CC4_LANGUAGES,
+          clean=True,
+          dedupe=True,
+          badwords_filter=True,
+          description="Caplena Multilingual C4 dataset."
       ),
       C4Config(
           "multilingual",
@@ -423,7 +439,8 @@ class C4(tfds.core.BeamBasedBuilder):
         pipeline |
         "create_wet_path_urls" >> beam.Create(file_paths["wet_path_urls"]) |
         beam.io.ReadAllFromText(
-            compression_type=beam.io.filesystem.CompressionTypes.UNCOMPRESSED
+            compression_type=beam.io.filesystem.CompressionTypes.UNCOMPRESSED,
+            skip_header_lines=55600
         )
         # Increase parallelism.
         | beam.Reshuffle() | "filter_corrupt_wet_files" >>
