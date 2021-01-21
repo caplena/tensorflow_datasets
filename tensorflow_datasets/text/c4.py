@@ -99,8 +99,10 @@ ALL_CC_VERSIONS = (  # as of September 23, 2020
     "2018-39", "2018-43", "2018-47", "2018-51", "2019-04", "2019-09", "2019-13",
     "2019-18", "2019-22", "2019-26", "2019-30", "2019-35", "2019-39", "2019-43",
     "2019-47", "2019-51", "2020-05", "2020-10", "2020-16", "2020-24", "2020-29",
-    "2020-34"
+    "2020-34", "2020-40", "2020-45", "2020-50"
 )
+
+CAPLENA_CC_VERSIONS = ["2013-20", "2015-40", "2017-47", "2019-18", "2020-50"]
 
 
 _KNOWN_CORRUPT_WET_FILES = (  # as of September 23, 2020
@@ -145,11 +147,11 @@ MC4_LANGUAGES = [
 ]
 
 # Caplena C4 Languages
+
 CC4_LANGUAGES = [
-    "af", "sq", "eu", "bs", "ca", "co", "hr", "cs", "da", "nl", "en", "et",
-    "fo", "fi", "fr", "de", "el", "he", "hu", "ga", "is", "it", "lb", "li",
-    "lt", "lv", "mk", "nb", "nn", "no", "pl", "pt", "rm", "ro", "sr", "sk",
-    "sl", "es", "sv", "tr", "yi"
+    "af", "sq", "eu", "ca", "cs", "da", "nl", "en", "et", "fi", "fr", "gl",
+    "de", "el", "hu", "is", "it", "lb", "lt", "lv", "mk", "no", "pl", "pt",
+    "ro", "sr", "sk", "sl", "es", "sv", "tr"
 ]
 
 
@@ -264,9 +266,11 @@ class C4(tfds.core.BeamBasedBuilder):
       C4Config(
           "caplena",
           languages=CC4_LANGUAGES,
+          cc_versions=CAPLENA_CC_VERSIONS,
           clean=True,
           dedupe=True,
-          badwords_filter=True,
+          paragraph_filter=True,
+          badwords_filter=False,
           description="Caplena Multilingual C4 dataset."
       ),
       C4Config(
@@ -440,7 +444,6 @@ class C4(tfds.core.BeamBasedBuilder):
         "create_wet_path_urls" >> beam.Create(file_paths["wet_path_urls"]) |
         beam.io.ReadAllFromText(
             compression_type=beam.io.filesystem.CompressionTypes.UNCOMPRESSED,
-            skip_header_lines=55600
         )
         # Increase parallelism.
         | beam.Reshuffle() | "filter_corrupt_wet_files" >>
