@@ -1,0 +1,5 @@
+https://github.com/caplena/tensorflow_datasets/archive/master.zip
+nltk
+gcld3
+langdetect
+tldextract
