@@ -114,7 +114,9 @@ DATASET_FILES = [
     'object_detection/open_images_classes_all.txt',
     'object_detection/open_images_classes_boxable.txt',
     'object_detection/open_images_classes_trainable.txt',
+    'video/tao/labels.txt',
     'video/ucf101_labels.txt',
+    'video/youtube_vis/labels.txt',
 ]
 
 # Extra dependencies required by specific datasets
@@ -135,6 +137,7 @@ DATASET_EXTRAS = {
         'scipy'
     ],
     'librispeech': ['pydub'],  # and ffmpeg installed
+    'ogbg_molpcba': ['pandas'],
     # sklearn version required to avoid conflict with librosa from
     # https://github.com/scikit-learn/scikit-learn/issues/14485
     # See https://github.com/librosa/librosa/issues/1160
@@ -148,6 +151,7 @@ DATASET_EXTRAS = {
     'wikipedia': ['mwparserfromhell', 'apache_beam'],
     'lsun': ['tensorflow-io'],
     'wsc273': ['bs4', 'lxml'],
+    'youtube_vis': ['pycocotools'],
 }
 
 
@@ -188,6 +192,7 @@ setup(
     packages=find_packages(),
     package_data={
         'tensorflow_datasets': DATASET_FILES + [
+            'core/features/colormap.csv',
             'scripts/documentation/templates/*',
             'url_checksums/*',
             'checksums.tsv',

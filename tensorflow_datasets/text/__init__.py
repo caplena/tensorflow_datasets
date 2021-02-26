@@ -30,6 +30,7 @@ from tensorflow_datasets.text.drop import Drop
 from tensorflow_datasets.text.eraser_multi_rc import EraserMultiRc
 from tensorflow_datasets.text.esnli import Esnli
 from tensorflow_datasets.text.gap import Gap
+from tensorflow_datasets.text.gem import Gem
 from tensorflow_datasets.text.glue import Glue
 from tensorflow_datasets.text.goemotions import Goemotions
 from tensorflow_datasets.text.gpt3 import Gpt3
@@ -59,6 +60,7 @@ from tensorflow_datasets.text.scan import ScanConfig
 from tensorflow_datasets.text.scicite import Scicite
 from tensorflow_datasets.text.sentiment140 import Sentiment140
 from tensorflow_datasets.text.snli import Snli
+from tensorflow_datasets.text.star_cfq import StarCFQ
 from tensorflow_datasets.text.story_cloze import StoryCloze
 from tensorflow_datasets.text.super_glue import SuperGlue
 from tensorflow_datasets.text.tiny_shakespeare import TinyShakespeare

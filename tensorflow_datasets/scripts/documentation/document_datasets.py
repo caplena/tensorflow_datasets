@@ -35,8 +35,9 @@ _WORKER_COUNT_DATASETS = 50
 _WORKER_COUNT_CONFIGS = 20
 
 # WmtTranslate: The raw wmt can only be instantiated with the config kwargs
-# TODO(tfds): Document image_label_folder datasets in a separate section
-_BUILDER_BLACKLIST = ['wmt_translate']
+_BUILDER_BLACKLIST = [
+    'wmt_translate',
+]
 
 
 @dataclasses.dataclass(eq=False, frozen=True)
@@ -83,7 +84,7 @@ def _load_builder(
     builder: Main builder instance
     config_builders: Additional builders (one of each configs)
   """
-  if ':' in name:  # Community dataset
+  if tfds.core.utils.DatasetName(name).namespace:  # Community dataset
     return _load_builder_from_location(name)
   else:  # Code dataset
     return _load_builder_from_code(name)
@@ -93,7 +94,7 @@ def _load_builder_from_location(
     name: str,
 ) -> Optional[BuilderToDocument]:
   """Load the builder, config,... to document."""
-  namespace, _ = name.split(':')
+  namespace = tfds.core.utils.DatasetName(name).namespace
   try:
     builder = tfds.builder(name)
   except tfds.core.DatasetNotFoundError:
@@ -230,7 +231,7 @@ def _document_single_builder_inner(
 def _all_tfds_datasets() -> List[str]:
   """Returns all "official" TFDS dataset names."""
   return sorted([
-      name for name in tfds.list_builders(with_community_datasets=False)  # pylint: disable=g-complex-comprehension
+      name for name in tfds.list_builders(with_community_datasets=True)  # pylint: disable=g-complex-comprehension
       if name not in _BUILDER_BLACKLIST
   ])
 

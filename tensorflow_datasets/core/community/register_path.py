@@ -15,13 +15,15 @@
 
 """Location-based register."""
 
+import concurrent.futures
 import difflib
-from typing import Any, Dict, Iterator, List, Type
+from typing import Any, Dict, FrozenSet, Iterator, List, Type
 
 import tensorflow as tf
 from tensorflow_datasets.core import dataset_builder
 from tensorflow_datasets.core import naming
 from tensorflow_datasets.core import read_only_builder
+from tensorflow_datasets.core import registered
 from tensorflow_datasets.core import utils
 from tensorflow_datasets.core.community import register_base
 import toml
@@ -72,6 +74,11 @@ class DataDirRegister(register_base.BaseRegister):
         for namespace, path in config['Namespaces'].items()
     }
 
+  @utils.memoized_property
+  def namespaces(self) -> FrozenSet[str]:
+    """Available namespaces."""
+    return frozenset(self._ns2data_dir)
+
   def list_builders(self) -> List[str]:
     """Returns the list of registered builders."""
     return sorted(_iter_builder_names(self._ns2data_dir))
@@ -80,6 +87,11 @@ class DataDirRegister(register_base.BaseRegister):
       self, name: utils.DatasetName,
   ) -> Type[dataset_builder.DatasetBuilder]:
     """Returns the builder classes."""
+    if name.namespace not in self.namespaces:  # pylint: disable=unsupported-membership-test
+      raise registered.DatasetNotFoundError(
+          f'Namespace {name.namespace} not found. Should be one of: '
+          f'{sorted(self.namespaces)}'
+      )
     raise NotImplementedError(
         'builder_cls does not support data_dir-based community datasets. Got: '
         f'{name}'
@@ -89,14 +101,15 @@ class DataDirRegister(register_base.BaseRegister):
       self, name: utils.DatasetName, **builder_kwargs: Any,
   ) -> dataset_builder.DatasetBuilder:
     """Returns the dataset builder."""
-    if 'data_dir' in builder_kwargs:
+    data_dir = builder_kwargs.pop('data_dir', None)
+    if data_dir:
       raise ValueError(
           '`data_dir` cannot be set for data_dir-based community datasets. '
-          'Dataset should already be generated.'
+          f'Dataset should already be generated. Got: {data_dir}'
       )
     if name.namespace is None:
       raise AssertionError(f'No namespace found: {name}')
-    if name.namespace not in self._ns2data_dir:
+    if name.namespace not in self._ns2data_dir:  # pylint: disable=unsupported-membership-test
       close_matches = difflib.get_close_matches(
           name.namespace, self._ns2data_dir, n=1
       )
@@ -125,7 +138,11 @@ def _maybe_iterdir(path: utils.ReadOnlyPath) -> Iterator[utils.ReadOnlyPath]:
   try:
     for f in path.iterdir():
       yield f
-  except (FileNotFoundError, tf.errors.NotFoundError):
+  except (
+      FileNotFoundError,
+      tf.errors.NotFoundError,
+      tf.errors.PermissionDeniedError,
+  ):
     pass
 
 
@@ -134,14 +151,30 @@ def _iter_builder_names(
 ) -> Iterator[str]:
   """Yields the `ns:name` dataset names."""
   FILTERED_DIRNAME = frozenset(('downloads',))  # pylint: disable=invalid-name
-  # For better performances, could try to load all namespaces asynchonously
-  for ns_name, data_dir in ns2data_dir.items():
+
+  def _is_valid_dataset_name(dataset_name: str) -> bool:
+    return (
+        dataset_name not in FILTERED_DIRNAME
+        and naming.is_valid_dataset_name(dataset_name)
+    )
+
+  # For better performances, load all namespaces asynchonously
+  def _get_builder_names_single_namespace(
+      ns_name: str, data_dir: utils.ReadOnlyPath,
+  ) -> List[str]:
     # Note: `data_dir` might contain non-dataset folders, but checking
     # individual dataset would have significant performance drop, so
     # this is an acceptable trade-of.
-    for builder_dir in _maybe_iterdir(data_dir):
-      if builder_dir.name in FILTERED_DIRNAME:
-        continue
-      if not naming.is_valid_dataset_name(builder_dir.name):
-        continue
-      yield str(utils.DatasetName(namespace=ns_name, name=builder_dir.name))
+    return [
+        str(utils.DatasetName(namespace=ns_name, name=builder_dir.name))
+        for builder_dir in _maybe_iterdir(data_dir)
+        if _is_valid_dataset_name(builder_dir.name)
+    ]
+
+  with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+    builder_names_futures = [
+        ex.submit(_get_builder_names_single_namespace, ns_name, data_dir)
+        for ns_name, data_dir in ns2data_dir.items()
+    ]
+    for future in concurrent.futures.as_completed(builder_names_futures):
+      yield from future.result()

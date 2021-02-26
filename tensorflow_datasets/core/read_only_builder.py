@@ -271,8 +271,12 @@ def _find_builder_dir_single_dir(
   builder_dir = os.path.join(builder_dir, version_str)
 
   # Check for builder dir existance
-  if not tf.io.gfile.exists(builder_dir):
+  try:
+    if not tf.io.gfile.exists(builder_dir):
+      return None
+  except tf.errors.PermissionDeniedError:
     return None
+
   # Backward compatibility, in order to be a valid ReadOnlyBuilder, the folder
   # has to contain the feature configuration.
   if not tf.io.gfile.exists(feature_lib.make_config_path(builder_dir)):
@@ -284,9 +288,12 @@ def _get_default_config_name(builder_dir: str, name: str) -> Optional[str]:
   """Returns the default config of the given dataset, None if not found."""
   # Search for the DatasetBuilder generation code
   try:
+    # Warning: The registered dataset may not match the files (e.g. if
+    # the imported datasets has the same name as the generated files while
+    # being 2 differents datasets)
     cls = registered.imported_builder_cls(name)
     cls = typing.cast(Type[dataset_builder.DatasetBuilder], cls)
-  except registered.DatasetNotFoundError:
+  except (registered.DatasetNotFoundError, PermissionError):
     pass
   else:
     # If code found, return the default config

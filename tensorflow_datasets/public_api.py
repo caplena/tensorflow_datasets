@@ -38,9 +38,11 @@ from tensorflow_datasets.core.load import load
 from tensorflow_datasets.core.splits import even_splits
 from tensorflow_datasets.core.splits import Split
 from tensorflow_datasets.core.utils import type_utils as typing
+from tensorflow_datasets.core.utils.benchmark import benchmark
 from tensorflow_datasets.core.utils.gcs_utils import is_dataset_on_gcs
 from tensorflow_datasets.core.utils.read_config import ReadConfig
 from tensorflow_datasets.core.utils.tqdm_utils import disable_progress_bar
+from tensorflow_datasets.core.utils.tqdm_utils import enable_progress_bar
 from tensorflow_datasets.core.visualization import show_examples
 from tensorflow_datasets.core.visualization import show_statistics
 from tensorflow_datasets.version import __version__
@@ -56,6 +58,7 @@ with core.registered.skip_registration():
 __all__ = [
     "as_dataframe",
     "as_numpy",
+    "benchmark",
     "core",
     "deprecated",
     "folder_dataset",
@@ -63,6 +66,7 @@ __all__ = [
     "builder_cls",
     "decode",
     "disable_progress_bar",
+    "enable_progress_bar",
     "download",
     "even_splits",
     "features",

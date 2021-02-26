@@ -15,6 +15,7 @@
 
 """DAVIS 2017 dataset for video object segmentation."""
 
+import numpy as np
 import tensorflow as tf
 import tensorflow_datasets.public_api as tfds
 
@@ -45,6 +46,15 @@ _CITATION = """\
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 """
+
+
+def _read_annotation(annotation_path):
+  """Read the image pixels of the annotation stored at annotations_path."""
+  with tf.io.gfile.GFile(annotation_path, 'rb') as f:
+    # Annotations are stored as index PNG so PIL returns directly the indices.
+    image = tfds.core.lazy_imports.PIL_Image.open(f)
+    image = np.asarray(image)
+  return image[:, :, None]
 
 
 class DavisConfig(tfds.core.BuilderConfig):
@@ -82,9 +92,11 @@ class Davis(tfds.core.GeneratorBasedBuilder):
       ),
   ]
 
-  VERSION = tfds.core.Version('1.0.0')
+  VERSION = tfds.core.Version('2.1.0')
   RELEASE_NOTES = {
       '1.0.0': 'Initial release.',
+      '2.0.0': 'Change instance ids to be 0, 1, 2, ...',
+      '2.1.0': 'Fix instance ids order.',
   }
 
   def _info(self) -> tfds.core.DatasetInfo:
@@ -99,7 +111,10 @@ class Davis(tfds.core.GeneratorBasedBuilder):
                     'frames':
                         tfds.features.Image(shape=(None, None, 3)),
                     'segmentations':
-                        tfds.features.Image(shape=(None, None, 1)),
+                        tfds.features.Image(
+                            shape=(None, None, 1),
+                            use_colormap=True,
+                        ),
                 }),
             'metadata': {
                 'num_frames': tf.int64,
@@ -146,8 +161,9 @@ class Davis(tfds.core.GeneratorBasedBuilder):
       for i in range(seq_len):
         image_path = images_path / f'{i:05d}.jpg'
         annotation_path = annotations_path / f'{i:05d}.png'
+        annotation = _read_annotation(annotation_path)
         images.append(image_path)
-        annotations.append(annotation_path)
+        annotations.append(annotation)
 
       video_dict = {'frames': images, 'segmentations': annotations}
       metadata = {'num_frames': seq_len, 'video_name': video}

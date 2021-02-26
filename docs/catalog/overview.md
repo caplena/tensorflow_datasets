@@ -47,6 +47,11 @@ for ex in tfds.load('cifar10', split='train'):
 *   [`voxforge`](voxforge.md)
 *   [`yes_no`](yes_no.md)
 
+### `Graphs`
+
+*   [`ogbg_molpcba`](ogbg_molpcba.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
+
 ### `Image`
 
 *   [`abstract_reasoning`](abstract_reasoning.md)
@@ -84,6 +89,8 @@ for ex in tfds.load('cifar10', split='train'):
 *   [`cars196`](cars196.md)
 *   [`cassava`](cassava.md)
 *   [`cats_vs_dogs`](cats_vs_dogs.md)
+*   [`chexpert`](chexpert.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
 *   [`cifar10`](cifar10.md)
 *   [`cifar100`](cifar100.md)
 *   [`cifar10_1`](cifar10_1.md)
@@ -180,6 +187,8 @@ for ex in tfds.load('cifar10', split='train'):
 *   [`cherry_blossoms`](cherry_blossoms.md)
 *   [`dart`](dart.md)
 *   [`e2e_cleaned`](e2e_cleaned.md)
+*   [`efron_morris75`](efron_morris75.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
 *   [`forest_fires`](forest_fires.md)
 *   [`genomics_ood`](genomics_ood.md)
 *   [`german_credit_numeric`](german_credit_numeric.md)
@@ -232,6 +241,8 @@ for ex in tfds.load('cifar10', split='train'):
 *   [`eraser_multi_rc`](eraser_multi_rc.md)
 *   [`esnli`](esnli.md)
 *   [`gap`](gap.md)
+*   [`gem`](gem.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
 *   [`glue`](glue.md)
 *   [`goemotions`](goemotions.md)
 *   [`gpt3`](gpt3.md)
@@ -259,6 +270,8 @@ for ex in tfds.load('cifar10', split='train'):
 *   [`scicite`](scicite.md)
 *   [`sentiment140`](sentiment140.md)
 *   [`snli`](snli.md)
+*   [`star_cfq`](star_cfq.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
 *   [`story_cloze`](story_cloze.md)
 *   [`super_glue`](super_glue.md)
 *   [`tiny_shakespeare`](tiny_shakespeare.md)
@@ -281,6 +294,8 @@ for ex in tfds.load('cifar10', split='train'):
 *   [`para_crawl`](para_crawl.md)
 *   [`ted_hrlr_translate`](ted_hrlr_translate.md)
 *   [`ted_multi_translate`](ted_multi_translate.md)
+*   [`wmt13_translate`](wmt13_translate.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
 *   [`wmt14_translate`](wmt14_translate.md)
 *   [`wmt15_translate`](wmt15_translate.md)
 *   [`wmt16_translate`](wmt16_translate.md)
@@ -296,7 +311,11 @@ for ex in tfds.load('cifar10', split='train'):
 *   [`moving_mnist`](moving_mnist.md)
 *   [`robonet`](robonet.md)
 *   [`starcraft_video`](starcraft_video.md)
+*   [`tao`](tao.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
 *   [`ucf101`](ucf101.md)
+*   [`youtube_vis`](youtube_vis.md)
+    <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
 
 ### `Vision language`
 

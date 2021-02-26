@@ -11,6 +11,11 @@
 
 # `davis`
 
+Note: This dataset has been updated since the last stable release. The new
+versions and config marked with
+<span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>
+are only available in the `tfds-nightly` package.
+
 *   **Description**:
 
 The DAVIS 2017 video object segmentation dataset.
@@ -22,7 +27,11 @@ The DAVIS 2017 video object segmentation dataset.
 
 *   **Versions**:
 
-    *   **`1.0.0`** (default): Initial release.
+    *   `1.0.0`: Initial release.
+    *   `2.0.0`: Change instance ids to be 0, 1, 2, ...
+    *   **`2.1.0`** (default)
+        <span class="material-icons" title="Available only in the tfds-nightly package">nights_stay</span>:
+        Fix instance ids order.
 
 *   **Auto-cached**
     ([documentation](https://www.tensorflow.org/datasets/performances#auto-caching)):
@@ -87,7 +96,7 @@ FeaturesDict({
 
 *   **Download size**: `794.19 MiB`
 
-*   **Dataset size**: `795.49 MiB`
+*   **Dataset size**: `792.26 MiB`
 
 *   **Examples**
     ([tfds.as_dataframe](https://www.tensorflow.org/datasets/api_docs/python/tfds/as_dataframe)):
@@ -100,7 +109,7 @@ FeaturesDict({
 <div id="dataframecontent" style="overflow-x:scroll"></div>
 <script src="https://www.gstatic.com/external_hosted/jquery2.min.js"></script>
 <script>
-var url = "https://storage.googleapis.com/tfds-data/visualization/dataframe/davis-480p-1.0.0.html";
+var url = "https://storage.googleapis.com/tfds-data/visualization/dataframe/davis-480p-2.1.0.html";
 $(document).ready(() => {
   $("#displaydataframe").click((event) => {
     // Disable the button after clicking (dataframe loaded only once).
@@ -129,7 +138,7 @@ $(document).ready(() => {
 
 *   **Download size**: `2.75 GiB`
 
-*   **Dataset size**: `2.79 GiB`
+*   **Dataset size**: `2.78 GiB`
 
 *   **Examples**
     ([tfds.as_dataframe](https://www.tensorflow.org/datasets/api_docs/python/tfds/as_dataframe)):
@@ -142,7 +151,7 @@ $(document).ready(() => {
 <div id="dataframecontent" style="overflow-x:scroll"></div>
 <script src="https://www.gstatic.com/external_hosted/jquery2.min.js"></script>
 <script>
-var url = "https://storage.googleapis.com/tfds-data/visualization/dataframe/davis-full_resolution-1.0.0.html";
+var url = "https://storage.googleapis.com/tfds-data/visualization/dataframe/davis-full_resolution-2.1.0.html";
 $(document).ready(() => {
   $("#displaydataframe").click((event) => {
     // Disable the button after clicking (dataframe loaded only once).

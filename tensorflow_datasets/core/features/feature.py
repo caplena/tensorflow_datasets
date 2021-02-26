@@ -18,6 +18,7 @@
 import abc
 import collections
 import functools
+import html
 import json
 import os
 from typing import Dict, Type, TypeVar
@@ -480,7 +481,20 @@ class FeatureConnector(object):
 
   def repr_html_batch(self, ex: np.ndarray) -> str:
     """Returns the HTML str representation of the object (Sequence)."""
-    return _repr_html(ex)
+    _MAX_SUB_ROWS = 7  # pylint: disable=invalid-name
+    if isinstance(ex, tf.RaggedTensor):  # e.g. `Sequence(Video())`
+      return _repr_html(ex)
+    # Truncate sequences which contains too many sub-examples
+    if len(ex) > _MAX_SUB_ROWS:
+      ex = ex[:_MAX_SUB_ROWS]
+      overflow = ['...']
+    else:
+      overflow = []
+    batch_ex = '<br/>'.join([self.repr_html(x) for x in ex] + overflow)
+    # TODO(tfds): How to limit the max-height to the neighboors cells ?
+    return (
+        f'<div style="overflow-y: scroll; max-height: 300px;" >{batch_ex}</div>'
+    )
 
   def repr_html_ragged(self, ex: np.ndarray) -> str:
     """Returns the HTML str representation of the object (Nested sequence)."""
@@ -731,7 +745,9 @@ def _repr_html(ex) -> str:
     # Do not print individual values for array as it is slow
     # TODO(tfds): We could display a snippet, like the first/last tree items
     return f'{type(ex).__qualname__}(shape={ex.shape}, dtype={ex.dtype})'
-  return repr(ex)
+
+  # Escape symbols which might have special meaning in HTML like '<', '>'
+  return html.escape(repr(ex))
 
 
 def _has_shape_ambiguity(in_shape: Shape, out_shape: Shape) -> bool:

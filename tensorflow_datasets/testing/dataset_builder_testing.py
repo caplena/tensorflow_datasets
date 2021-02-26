@@ -23,9 +23,11 @@ import itertools
 import numbers
 import os
 import textwrap
-from typing import Iterator
+import types
+from typing import Iterator, List, Optional, Union
 from unittest import mock
 
+from absl import logging
 from absl.testing import parameterized
 import numpy as np
 import tensorflow.compat.v2 as tf
@@ -97,6 +99,9 @@ class DatasetBuilderTestCase(
 
     * VERSION: `str`. The version used to run the test. eg: '1.2.*'.
       Defaults to None (canonical version).
+    * BUILDER_CONFIG_NAMES_TO_TEST: `list[str | tfds.core.BuilderConfig]`,
+      the list of builder configs that should be tested. If None, all the
+      BUILDER_CONFIGS from the class will be tested.
     * BUILDER_CONFIG_NAMES_TO_TEST: `list[str]`, the list of builder configs
       that should be tested. If None, all the BUILDER_CONFIGS from the class
       will be tested.
@@ -110,8 +115,7 @@ class DatasetBuilderTestCase(
       If not specified: will use DL_EXTRACT_RESULT (this is due to backwards
       compatibility and will be removed in the future).
     * EXAMPLE_DIR: `str`, the base directory in in which fake examples are
-      contained. Optional; defaults to
-      tensorflow_datasets/testing/test_data/fake_examples/<dataset name>.
+      contained. Optional; defaults to `<dataset dir>/dummy_data/`.
     * OVERLAPPING_SPLITS: `list[str]`, splits containing examples from other
       splits (e.g. a "example" split containing pictures from other splits).
     * MOCK_OUT_FORBIDDEN_OS_FUNCTIONS: `bool`, defaults to True. Set to False to
@@ -119,6 +123,7 @@ class DatasetBuilderTestCase(
       recommended `tf.io.gfile` API.
     * SKIP_CHECKSUMS: Checks that the urls called by `dl_manager.download`
       are registered.
+    * SKIP_TF1_GRAPH_MODE: Runs in eager mode only.
 
   This test case will check for the following:
 
@@ -137,13 +142,16 @@ class DatasetBuilderTestCase(
 
   DATASET_CLASS = None
   VERSION = None
-  BUILDER_CONFIG_NAMES_TO_TEST = None
+  BUILDER_CONFIG_NAMES_TO_TEST: Optional[List[
+      Union[str, dataset_builder.BuilderConfig]
+  ]] = None
   DL_EXTRACT_RESULT = None
   DL_DOWNLOAD_RESULT = None
   EXAMPLE_DIR = None
   OVERLAPPING_SPLITS = []
   MOCK_OUT_FORBIDDEN_OS_FUNCTIONS = True
   SKIP_CHECKSUMS = False
+  SKIP_TF1_GRAPH_MODE = False
 
   @classmethod
   def setUpClass(cls):
@@ -170,19 +178,6 @@ class DatasetBuilderTestCase(
     self.patchers = []
     self.builder = self._make_builder()
 
-    example_dir = self.DATASET_CLASS.code_path.parent / "dummy_data"
-    fake_example_dir = utils.as_path(test_utils.fake_examples_dir())
-    if self.EXAMPLE_DIR is not None:
-      self.example_dir = utils.as_path(self.EXAMPLE_DIR)
-      example_dir = self.example_dir  # Dir to display in the error
-    elif example_dir.exists():
-      self.example_dir = example_dir
-    else:
-      self.example_dir = fake_example_dir / self.builder.name
-
-    if not self.example_dir.exists():
-      err_msg = f"Dummy data not found in: {example_dir}"
-      raise ValueError(err_msg)
     if self.MOCK_OUT_FORBIDDEN_OS_FUNCTIONS:
       self._mock_out_forbidden_os_functions()
 
@@ -199,6 +194,29 @@ class DatasetBuilderTestCase(
     super(DatasetBuilderTestCase, self).tearDown()
     for patcher in self.patchers:
       patcher.stop()
+
+  @utils.classproperty
+  @classmethod
+  @utils.memoize()
+  def dummy_data(cls) -> utils.ReadOnlyPath:  # pylint: disable=no-self-argument
+    """Path to the `dummy_data/` directory."""
+    if cls is DatasetBuilderTestCase:  # Required for build_api_docs
+      return None  # pytype: disable=bad-return-type
+
+    dummy_data_expected = cls.DATASET_CLASS.code_path.parent / "dummy_data"
+    fake_example_dir = utils.as_path(test_utils.fake_examples_dir())
+    if cls.EXAMPLE_DIR is not None:
+      dummy_data_found = utils.as_path(cls.EXAMPLE_DIR)
+      dummy_data_expected = dummy_data_found  # Dir to display in the error
+    elif dummy_data_expected.exists():
+      dummy_data_found = dummy_data_expected
+    else:
+      dummy_data_found = fake_example_dir / cls.DATASET_CLASS.name
+
+    if not dummy_data_found.exists():
+      err_msg = f"Dummy data not found in: {dummy_data_expected}"
+      raise ValueError(err_msg)
+    return dummy_data_found
 
   def _mock_out_forbidden_os_functions(self):
     """Raises error if forbidden os functions are called instead of gfile."""
@@ -262,9 +280,9 @@ class DatasetBuilderTestCase(
     tf.nest.map_structure(self._add_url, url)
     del url
     if self.DL_EXTRACT_RESULT is None:
-      return self.example_dir
+      return self.dummy_data
     return tf.nest.map_structure(
-        lambda fname: self.example_dir / fname,
+        lambda fname: self.dummy_data / fname,
         self.DL_EXTRACT_RESULT,
     )
 
@@ -272,10 +290,10 @@ class DatasetBuilderTestCase(
     tf.nest.map_structure(self._add_url, url)
     if self.DL_DOWNLOAD_RESULT is None:
       # This is only to be backwards compatible with old approach.
-      # In the future it will be replaced with using self.example_dir.
+      # In the future it will be replaced with using self.dummy_data.
       return self._get_dl_extract_result(url)
     return tf.nest.map_structure(
-        lambda fname: self.example_dir / fname,
+        lambda fname: self.dummy_data / fname,
         self.DL_DOWNLOAD_RESULT,
     )
 
@@ -290,24 +308,34 @@ class DatasetBuilderTestCase(
 
   @test_utils.run_in_graph_and_eager_modes()
   def test_download_and_prepare_as_dataset(self):
-    # If configs specified, ensure they are all valid
+    if not tf.executing_eagerly() and self.SKIP_TF1_GRAPH_MODE:
+      logging.warning("Skipping tests in non-eager mode")
+      return
+
+    # Extract configs to test
+    configs_to_test: List[Union[str, dataset_builder.BuilderConfig]] = []
     if self.BUILDER_CONFIG_NAMES_TO_TEST:
       for config in self.BUILDER_CONFIG_NAMES_TO_TEST:  # pylint: disable=not-an-iterable
-        assert config in self.builder.builder_configs, (
-            "Config %s specified in test does not exist. Available:\n%s" % (
-                config, list(self.builder.builder_configs)))
+        if isinstance(config, dataset_builder.BuilderConfig):
+          configs_to_test.append(config)
+        elif config in self.builder.builder_configs:
+          # Append the `name` rather than the config due to
+          # https://github.com/tensorflow/datasets/issues/2348
+          configs_to_test.append(config)
+        else:
+          raise ValueError(
+              f"Invalid config {config} specified in test."
+              f"Available: {list(self.builder.builder_configs)}"
+          )
+    else:
+      configs_to_test.extend(cfg.name for cfg in self.builder.BUILDER_CONFIGS)
 
-    configs = self.builder.BUILDER_CONFIGS
-    print("Total configs: %d" % len(configs))
-    if configs:
-      for config in configs:
-        # Skip the configs that are not in the list.
-        if (self.BUILDER_CONFIG_NAMES_TO_TEST is not None and
-            (config.name not in self.BUILDER_CONFIG_NAMES_TO_TEST)):  # pylint: disable=unsupported-membership-test
-          print("Skipping config %s" % config.name)
-          continue
-        with self._subTest(config.name):
-          print("Testing config %s" % config.name)
+    print(f"Total configs: {len(configs_to_test)}")
+    if configs_to_test:
+      for config in configs_to_test:
+        config_name = config if isinstance(config, str) else config.name
+        with self._subTest(config_name):
+          print(f"Testing config {config_name}")
           builder = self._make_builder(config=config)
           self._download_and_prepare_as_dataset(builder)
     else:
@@ -358,7 +386,7 @@ class DatasetBuilderTestCase(
         side_effect=Exception("Missing MANUAL_DOWNLOAD_INSTRUCTIONS"))
 
     manual_dir = (
-        self.example_dir
+        self.dummy_data
         if builder.MANUAL_DOWNLOAD_INSTRUCTIONS else missing_dir_mock)
     with mock.patch.multiple(
         "tensorflow_datasets.core.download.DownloadManager",
@@ -366,7 +394,7 @@ class DatasetBuilderTestCase(
         download=self._get_dl_download_result,
         download_checksums=self._download_checksums,
         manual_dir=manual_dir,
-        download_dir=self.example_dir,
+        download_dir=self.dummy_data,
     ):
       # For Beam datasets, set-up the runner config
       beam_runner = None
@@ -429,7 +457,7 @@ class DatasetBuilderTestCase(
       yield
 
   def _assert_key_valid(self, key):
-    if isinstance(key, str) and os.fspath(self.example_dir) in key:
+    if isinstance(key, str) and os.fspath(self.dummy_data) in key:
       err_msg = (
           "Key yield in '_generate_examples' method "
           f"contain user directory path: {key}.\n"
@@ -442,13 +470,14 @@ class DatasetBuilderTestCase(
     split_to_checksums = {}  # {"split": set(examples_checksums)}
     for split_name, expected_examples_number in self.SPLITS.items():
       ds = builder.as_dataset(split=split_name)
+      spec = tf.data.DatasetSpec.from_value(ds)
       compare_shapes_and_types(
           builder.info.features.get_tensor_info(),
-          tf.compat.v1.data.get_output_types(ds),
-          tf.compat.v1.data.get_output_shapes(ds),
+          # We use _element_spec because element_spec was added in TF2.5+.
+          element_spec=spec._element_spec,  # pylint: disable=protected-access
       )
-      examples = list(dataset_utils.as_numpy(
-          builder.as_dataset(split=split_name)))
+      examples = list(
+          dataset_utils.as_numpy(builder.as_dataset(split=split_name)))
       split_to_checksums[split_name] = set(checksum(rec) for rec in examples)
       self.assertLen(examples, expected_examples_number)
     for (split1, hashes1), (split2, hashes2) in itertools.combinations(
@@ -529,6 +558,9 @@ def checksum(example):
         flat_str.append(str(list(element.ravel())))
       else:
         flat_str.append(element.tobytes())
+    elif isinstance(element, types.GeneratorType):
+      for nested_e in element:
+        _bytes_flatten(flat_str, nested_e)
     else:
       flat_str.append(bytes(element))
     return flat_str
@@ -545,19 +577,20 @@ def checksum(example):
   return hash_.hexdigest()
 
 
-def compare_shapes_and_types(tensor_info, output_types, output_shapes):
+def compare_shapes_and_types(tensor_info, element_spec):
   """Compare shapes and types between TensorInfo and Dataset types/shapes."""
-  for feature_name, feature_info in tensor_info.items():
-    if isinstance(feature_info, dict):
-      compare_shapes_and_types(feature_info, output_types[feature_name],
-                               output_shapes[feature_name])
+  for feature_name, (feature_info,
+                     spec) in utils.zip_dict(tensor_info, element_spec):
+    if isinstance(spec, tf.data.DatasetSpec):
+      # We use _element_spec because element_spec was added in TF2.5+.
+      compare_shapes_and_types(feature_info, spec._element_spec)  # pylint: disable=protected-access
+    elif isinstance(feature_info, dict):
+      compare_shapes_and_types(feature_info, spec)
     else:
-      expected_type = feature_info.dtype
-      output_type = output_types[feature_name]
-      if expected_type != output_type:
-        raise TypeError("Feature %s has type %s but expected %s" %
-                        (feature_name, output_type, expected_type))
-
-      expected_shape = feature_info.shape
-      output_shape = output_shapes[feature_name]
-      utils.assert_shape_match(expected_shape, output_shape)
+      # Some earlier versions of TF don't expose dtype and shape for the
+      # RaggedTensorSpec, so we use the protected versions.
+      if feature_info.dtype != spec._dtype:  # pylint: disable=protected-access
+        raise TypeError(
+            f"Feature {feature_name} has type {feature_info} but expected {spec}"
+        )
+      utils.assert_shape_match(feature_info.shape, spec._shape)  # pylint: disable=protected-access

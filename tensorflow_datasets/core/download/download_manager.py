@@ -445,8 +445,8 @@ class DownloadManager(object):
     # * (cached) checksum_path
     # * (cached) url_path
     # * `tmp_dir/file` (downloaded path)
-    if path.is_relative_to(self._manual_dir):  # Manually downloaded data
-      return path
+    if self._manual_dir and path.is_relative_to(self._manual_dir):
+      return path  # Manually downloaded data
     elif path == checksum_path:  # Path already at final destination
       assert computed_url_info == expected_url_info  # Sanity check
       return checksum_path  # pytype: disable=bad-return-type
@@ -749,8 +749,9 @@ def _validate_checksums(
       and expected_url_info != computed_url_info
   ):
     msg = (
-        f'Artifact {url}, downloaded to {path}, has wrong checksum. '
-        f'Expected: {expected_url_info}. Got: {computed_url_info}.'
+        f'Artifact {url}, downloaded to {path}, has wrong checksum:\n'
+        f'* Expected: {expected_url_info}\n'
+        f'* Got: {computed_url_info}\n'
         'To debug, see: '
         'https://www.tensorflow.org/datasets/overview#fixing_nonmatchingchecksumerror'
     )
