@@ -212,7 +212,7 @@ class Glue(tfds.core.GeneratorBasedBuilder):
           },
           label_classes=["not_duplicate", "duplicate"],
           label_column="is_duplicate",
-          data_url="https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/o/data%2FQQP.zip?alt=media&token=700c6acf-160d-4d89-81d1-de4191d02cb5",
+          data_url="https://dl.fbaipublicfiles.com/glue/data/QQP.zip",
           data_dir="QQP",
           citation=textwrap.dedent("""\
           @online{WinNT,
@@ -441,7 +441,7 @@ class Glue(tfds.core.GeneratorBasedBuilder):
     if self.builder_config.name == "mrpc":
       data_dir = None
       mrpc_files = dl_manager.download({
-          "dev_ids": _MRPC_DEV_IDS,
+          # "dev_ids": _MRPC_DEV_IDS,
           "train": _MRPC_TRAIN,
           "test": _MRPC_TEST,
       })
