@@ -55,7 +55,7 @@ class Wmt19Translate(wmt.WmtTranslate):
             "europarl_v9", "europarl_v7_frde", "paracrawl_v3",
             "paracrawl_v1_ru", "paracrawl_v3_frde", "commoncrawl",
             "commoncrawl_frde", "newscommentary_v14", "newscommentary_v14_frde",
-            "czeng_17", "yandexcorpus", "wikititles_v1", "uncorpus_v1",
+            "yandexcorpus", "wikititles_v1", "uncorpus_v1",
             "rapid_2016_ltfi", "rapid_2019"] + wmt.CWMT_SUBSET_NAMES,
         tfds.Split.VALIDATION: [
             "euelections_dev2019", "newsdev2019", "newstest2018"]

@@ -60,7 +60,7 @@ class Wmt13Translate(wmt.WmtTranslate):
         tfds.Split.TRAIN: [
             "europarl_v7", "commoncrawl", "multiun",
             "newscommentary_v8", "gigafren", "wikiheadlines_ru",
-            "yandexcorpus", "czeng_10"],
+            "yandexcorpus"],
         tfds.Split.VALIDATION: [
             "newstest2012", "newstest2011", "newstest2010",
             "newstest2009", "newstest2008", "newssyscomb2009"

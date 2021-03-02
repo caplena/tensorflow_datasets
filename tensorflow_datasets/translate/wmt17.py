@@ -56,7 +56,7 @@ class Wmt17Translate(wmt.WmtTranslate):
     return {
         tfds.Split.TRAIN: [
             "europarl_v7", "europarl_v8_16", "commoncrawl",
-            "newscommentary_v12", "czeng_16", "yandexcorpus",
+            "newscommentary_v12", "yandexcorpus",
             "wikiheadlines_fi", "wikiheadlines_ru", "setimes_2", "uncorpus_v1",
             "rapid_2016", "leta_v1", "dcep_v1", "onlinebooks_v1"
         ] + wmt.CWMT_SUBSET_NAMES,

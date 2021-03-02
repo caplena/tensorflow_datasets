@@ -56,7 +56,7 @@ class Wmt15Translate(wmt.WmtTranslate):
     return {
         tfds.Split.TRAIN: [
             "europarl_v7", "europarl_v8_16", "commoncrawl", "multiun",
-            "newscommentary_v10", "gigafren", "czeng_10", "yandexcorpus",
+            "newscommentary_v10", "gigafren", "yandexcorpus",
             "wikiheadlines_fi", "wikiheadlines_ru"],
         tfds.Split.VALIDATION: [
             "newsdev2015", "newsdiscussdev2015", "newstest2014"

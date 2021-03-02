@@ -441,7 +441,7 @@ class Glue(tfds.core.GeneratorBasedBuilder):
     if self.builder_config.name == "mrpc":
       data_dir = None
       mrpc_files = dl_manager.download({
-          # "dev_ids": _MRPC_DEV_IDS,
+          "dev_ids": _MRPC_DEV_IDS,
           "train": _MRPC_TRAIN,
           "test": _MRPC_TEST,
       })
